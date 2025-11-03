@@ -16,6 +16,7 @@ contract Voting {
     uint public candidateCount;
 
     mapping(address => bool) public hasVoted;
+    address[] public voterList; // Track all voters
 
     event CandidateRegistered(uint id, string name);
     event VoteCasted(address voter, uint candidateId);
@@ -54,22 +55,33 @@ contract Voting {
     }
 
     function resetElection() public onlyAdmin {
-    require(electionEnded, "Election is ongoing");
-    // Clear candidates
-    for (uint i = 1; i <= candidateCount; i++) {
-        delete candidates[i];
-    }
-    candidateCount = 0;
+        require(electionEnded, "Election is ongoing");
+        
+        // Clear candidates
+        for (uint i = 1; i <= candidateCount; i++) {
+            delete candidates[i];
+        }
+        candidateCount = 0;
 
-    // Optionally reset vote counts or any related state
-    electionStarted = false;
-    electionEnded = false;
-}
+        // Clear all voters
+        for (uint i = 0; i < voterList.length; i++) {
+            hasVoted[voterList[i]] = false;
+        }
+        delete voterList; // Clear the voter list array
+
+        // Reset election state
+        electionStarted = false;
+        electionEnded = false;
+    }
+
     function vote(uint candidateId) public electionActive {
         require(!hasVoted[msg.sender], "Already voted!");
         require(candidateId > 0 && candidateId <= candidateCount, "Invalid candidate");
+        
         candidates[candidateId].voteCount++;
         hasVoted[msg.sender] = true;
+        voterList.push(msg.sender); // Track this voter
+        
         emit VoteCasted(msg.sender, candidateId);
     }
 }
